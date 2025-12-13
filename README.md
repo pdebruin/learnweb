@@ -6,55 +6,186 @@ A web application that integrates with Microsoft Learn documentation via MCP (Mo
 
 ### Prerequisites
 
-- Node.js 18 or higher
-- npm (comes with Node.js)
+- **Node.js**: Version 18.x or higher (20.x recommended)
+- **npm**: Version 9.x or higher (comes with Node.js)
+
+To verify your installed versions:
+```bash
+node --version  # Should show v18.x.x or higher
+npm --version   # Should show 9.x.x or higher
+```
 
 ### Setup
 
-1. Clone the repository:
+1. **Clone the repository:**
 ```bash
 git clone https://github.com/pdebruin/learnweb.git
 cd learnweb
 ```
 
-2. Install dependencies:
+2. **Install dependencies:**
 ```bash
 npm install
 ```
+This will install all required packages including TypeScript, the MCP SDK, and development dependencies.
 
-3. Build the project:
+3. **Build the project:**
 ```bash
 npm run build
+```
+This command compiles TypeScript files to JavaScript and copies static assets to the `dist/` directory.
+
+**Expected output:**
+```
+> @pjmdebruin/learnweb@1.0.0 build
+> tsc && cp src/index.html dist/index.html
+```
+
+4. **Verify the build:**
+
+Check that the `dist/` directory was created with the following files:
+```bash
+ls dist/
+# Should show: index.html  index.js  index.js.map  server.js  server.js.map
 ```
 
 ### Usage
 
-After building, you can run the web server:
+#### Starting the Server
 
+Run the web server:
 ```bash
-# Start the web server
 npm start
 ```
 
-Then open your browser and navigate to `http://localhost:3000`
+**Expected output:**
+```
+Server running at http://localhost:3000/
+```
+
+#### Accessing the Application
+
+1. Open your web browser
+2. Navigate to `http://localhost:3000`
+3. You should see the learnweb interface with a search box
+
+#### Using the Web Interface
 
 The web interface allows you to:
-- Search Microsoft Learn documentation by entering a query
-- View execution progress logs in real-time
-- See search results with titles, content, and links to documentation
+- **Search Microsoft Learn documentation** by entering a query in the search box
+- **View execution progress logs** in real-time as the search is performed
+- **See search results** with titles, content snippets, and links to documentation
 
-#### Logging
+**Example search queries:**
+- "azure functions"
+- "typescript decorators"
+- "dotnet minimal apis"
 
-The web interface provides execution progress logs when searching documentation:
-- `[INFO]` logs show the execution flow (MCP connection, tool calling, etc.)
-- `[ERROR]` logs show any errors encountered
-- `[SUCCESS]` logs show successful operations
+#### Execution Logs
+
+The web interface provides detailed execution progress logs:
+- **[INFO]** - Execution flow information (MCP connection, tool calling, etc.)
+- **[ERROR]** - Error messages if something goes wrong
+- **[SUCCESS]** - Successful operations and results
+
+#### Stopping the Server
+
+To stop the server, press `Ctrl+C` in the terminal where it's running.
 
 ### Development
 
-- **Build**: `npm run build` - Compiles TypeScript to JavaScript and copies static assets
-- **Start**: `npm start` - Builds and runs the web server
-- **Test**: `npm test` - Builds and runs tests (if available)
+#### Available Commands
+
+- **`npm run build`** - Compiles TypeScript to JavaScript and copies static assets to `dist/`
+- **`npm start`** - Builds the project and starts the web server (runs `npm run build` first)
+- **`npm test`** - Builds the project and runs the test suite
+
+#### Development Workflow
+
+1. Make changes to files in the `src/` directory
+2. Run `npm run build` to compile your changes
+3. Run `npm start` to test your changes in the browser
+4. Run `npm test` to verify tests still pass
+
+#### Project Structure
+
+```
+learnweb/
+├── src/
+│   ├── index.html      # Web interface HTML
+│   ├── index.ts        # Client-side TypeScript code
+│   ├── server.ts       # HTTP server implementation
+│   └── index.test.ts   # Test suite
+├── dist/               # Compiled output (created by build)
+├── package.json        # Project configuration and dependencies
+├── tsconfig.json       # TypeScript compiler configuration
+└── README.md           # This file
+```
+
+### Troubleshooting
+
+#### Build Fails
+
+If `npm run build` fails:
+
+1. **Ensure you have the correct Node.js version:**
+   ```bash
+   node --version  # Should be 18.x or higher
+   ```
+
+2. **Clean install dependencies:**
+   ```bash
+   rm -rf node_modules package-lock.json
+   npm install
+   npm run build
+   ```
+
+3. **Check for TypeScript errors:**
+   ```bash
+   npx tsc --noEmit
+   ```
+
+#### Server Won't Start
+
+If `npm start` fails or the server doesn't respond:
+
+1. **Check if port 3000 is already in use:**
+   ```bash
+   # On Linux/Mac:
+   lsof -i :3000
+   
+   # On Windows:
+   netstat -ano | findstr :3000
+   ```
+
+2. **Use a different port:**
+   ```bash
+   PORT=8080 npm start
+   ```
+
+3. **Verify the build completed successfully:**
+   ```bash
+   ls dist/
+   # Should show compiled files
+   ```
+
+#### Tests Fail
+
+If `npm test` fails:
+
+1. **Ensure the project is built:**
+   ```bash
+   npm run build
+   npm test
+   ```
+
+2. **Check for specific test errors** in the output and address them
+
+#### Common Issues
+
+- **"Cannot find module" errors**: Run `npm install` to ensure all dependencies are installed
+- **TypeScript compilation errors**: Check that your TypeScript version matches the project requirements (`npm list typescript`)
+- **Port already in use**: Stop other services using port 3000 or use the `PORT` environment variable
 
 ## Architecture
 
