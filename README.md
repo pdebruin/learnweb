@@ -7,12 +7,12 @@ A web application that integrates with Microsoft Learn documentation via MCP (Mo
 ### Prerequisites
 
 - **Node.js**: Version 18.x or higher (20.x recommended)
-- **npm**: Version 9.x or higher (comes with Node.js)
+- **npm**: Version 8.x or higher (comes with Node.js)
 
 To verify your installed versions:
 ```bash
 node --version  # Should show v18.x.x or higher
-npm --version   # Should show 9.x.x or higher
+npm --version   # Should show 8.x.x or higher
 ```
 
 ### Setup
@@ -184,8 +184,8 @@ If `npm test` fails:
 #### Common Issues
 
 - **"Cannot find module" errors**: Run `npm install` to ensure all dependencies are installed
-- **TypeScript compilation errors**: Check that your TypeScript version matches the project requirements (`npm list typescript`)
-- **Port already in use**: Stop other services using port 3000 or use the `PORT` environment variable
+- **TypeScript compilation errors**: Check that your TypeScript version is 5.9.3 or higher (`npm list typescript`)
+- **Port already in use**: Stop other services using port 3000 or use the `PORT` environment variable to use a different port
 
 ## Architecture
 
