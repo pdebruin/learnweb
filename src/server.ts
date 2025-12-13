@@ -29,6 +29,7 @@ const server = createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': contentType });
     res.end(content);
   } catch (error) {
+    console.error('Error serving file:', error);
     res.writeHead(500);
     res.end('Internal Server Error');
   }

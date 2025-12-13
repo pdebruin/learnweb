@@ -57,16 +57,51 @@ function displayResults(results: any[]) {
     const linkField = result.links || result.link;
     if (linkField) {
       const linkText = typeof linkField === 'string' ? linkField : JSON.stringify(linkField);
-      const link = document.createElement('a');
-      link.className = 'result-link';
-      link.href = linkText;
-      link.textContent = 'View documentation →';
-      link.target = '_blank';
-      resultItem.appendChild(link);
+      // Validate URL to prevent XSS
+      try {
+        const url = new URL(linkText);
+        if (url.protocol === 'http:' || url.protocol === 'https:') {
+          const link = document.createElement('a');
+          link.className = 'result-link';
+          link.href = linkText;
+          link.textContent = 'View documentation →';
+          link.target = '_blank';
+          resultItem.appendChild(link);
+        }
+      } catch (e) {
+        // Invalid URL, skip link
+      }
     }
     
     resultsContainer.appendChild(resultItem);
   });
+}
+
+function findJsonContent(content: any[]): any | null {
+  for (const item of content) {
+    if (item.type === 'text' && item.text && typeof item.text === 'string') {
+      const trimmed = item.text.trim();
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        try {
+          return JSON.parse(trimmed);
+        } catch (e) {
+          // Not valid JSON, continue searching
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function extractNestedResults(structuredData: any): any[] {
+  let results = Array.isArray(structuredData) ? structuredData : [structuredData];
+  
+  // Check if the first item has a 'results' property that is an array
+  if (results.length > 0 && results[0] && results[0].results && Array.isArray(results[0].results)) {
+    results = results[0].results;
+  }
+  
+  return results;
 }
 
 async function validateTool(client: Client): Promise<boolean> {
@@ -125,30 +160,10 @@ async function searchDocs(query: string): Promise<void> {
     addLog('Received response from MCP server', 'success');
     
     if (result.content && Array.isArray(result.content)) {
-      let structuredData = null;
-      
-      for (const item of result.content) {
-        if (item.type === 'text' && item.text && typeof item.text === 'string') {
-          const trimmed = item.text.trim();
-          if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-            try {
-              const parsed = JSON.parse(trimmed);
-              structuredData = parsed;
-              break;
-            } catch (e) {
-              // Not valid JSON, continue searching
-            }
-          }
-        }
-      }
+      const structuredData = findJsonContent(result.content);
       
       if (structuredData) {
-        let results = Array.isArray(structuredData) ? structuredData : [structuredData];
-        
-        if (results.length > 0 && results[0] && results[0].results && Array.isArray(results[0].results)) {
-          results = results[0].results;
-        }
-        
+        const results = extractNestedResults(structuredData);
         displayResults(results);
       } else {
         addLog('No structured content found in response', 'error');
