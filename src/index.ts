@@ -29,7 +29,7 @@ function displayResults(results: any[]) {
     return;
   }
   
-  addLog(`Found ${results.length} result(s)`, 'success');
+  addLog(`Found ${results.length} result(s), displaying top result`, 'success');
   
   // Limit to 1 result as requested
   const limitedResults = results.slice(0, 1);

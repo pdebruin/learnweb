@@ -35,11 +35,19 @@ const server = createServer(async (req, res) => {
         const events: string[] = [];
         
         try {
-          const { query } = JSON.parse(body);
+          let query: string;
+          try {
+            const parsed = JSON.parse(body);
+            query = parsed.query;
+          } catch (parseError) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Invalid JSON in request body', events }));
+            return;
+          }
           
           if (!query || typeof query !== 'string') {
             res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Invalid query parameter' }));
+            res.end(JSON.stringify({ error: 'Invalid query parameter', events }));
             return;
           }
           
