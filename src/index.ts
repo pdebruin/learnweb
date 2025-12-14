@@ -1,9 +1,4 @@
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import type { Tool } from "@modelcontextprotocol/sdk/types.js";
-
-const MCP_ENDPOINT = "https://learn.microsoft.com/api/mcp";
-const TOOL_NAME = "microsoft_docs_search";
+const API_ENDPOINT = "/api/search";
 
 function addLog(message: string, type: 'info' | 'error' | 'success' = 'info') {
   const logsContainer = document.getElementById('logs');
@@ -104,15 +99,6 @@ function extractNestedResults(structuredData: any): any[] {
   return results;
 }
 
-async function validateTool(client: Client): Promise<boolean> {
-  try {
-    const tools = await client.listTools();
-    return tools.tools.some((tool: Tool) => tool.name === TOOL_NAME);
-  } catch (error) {
-    return false;
-  }
-}
-
 async function searchDocs(query: string): Promise<void> {
   clearLogs();
   addLog(`Starting search with query: "${query}"`, 'info');
@@ -123,41 +109,26 @@ async function searchDocs(query: string): Promise<void> {
   if (searchButton) searchButton.disabled = true;
   if (searchInput) searchInput.disabled = true;
   
-  addLog('Creating MCP client...', 'info');
-  const transport = new StreamableHTTPClientTransport(new URL(MCP_ENDPOINT));
-  const client = new Client(
-    {
-      name: "learnweb",
-      version: "1.0.0",
-    },
-    {
-      capabilities: {},
-    }
-  );
-  
   try {
-    addLog('Connecting to MCP server...', 'info');
-    await client.connect(transport);
-    addLog('Connected to MCP server', 'success');
+    addLog('Sending search request to server...', 'info');
     
-    addLog(`Validating tool '${TOOL_NAME}'...`, 'info');
-    const toolAvailable = await validateTool(client);
-    if (!toolAvailable) {
-      addLog(`Tool '${TOOL_NAME}' is not available on the MCP server`, 'error');
-      await client.close();
-      return;
-    }
-    addLog(`Tool '${TOOL_NAME}' is available`, 'success');
-    
-    addLog(`Calling tool '${TOOL_NAME}' with query: "${query}"`, 'info');
-    const result = await client.callTool({
-      name: TOOL_NAME,
-      arguments: {
-        query,
+    const response = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ query }),
     });
     
-    addLog('Received response from MCP server', 'success');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
+      addLog(`Error: ${errorData.error || `HTTP ${response.status}`}`, 'error');
+      displayResults([]);
+      return;
+    }
+    
+    addLog('Received response from server', 'success');
+    const result = await response.json();
     
     if (result.content && Array.isArray(result.content)) {
       const structuredData = findJsonContent(result.content);
@@ -173,16 +144,9 @@ async function searchDocs(query: string): Promise<void> {
       addLog('Unexpected response format', 'error');
       displayResults([]);
     }
-    
-    await client.close();
-    addLog('Connection closed', 'info');
   } catch (error) {
     addLog(`Error searching docs: ${error instanceof Error ? error.message : String(error)}`, 'error');
-    try {
-      await client.close();
-    } catch (closeError) {
-      // Ignore errors during cleanup
-    }
+    displayResults([]);
   } finally {
     if (searchButton) searchButton.disabled = false;
     if (searchInput) searchInput.disabled = false;
