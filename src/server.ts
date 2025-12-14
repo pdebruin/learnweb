@@ -40,6 +40,11 @@ const server = createServer(async (req, res) => {
             return;
           }
           
+          // Collect server-side events to send to client
+          const events: string[] = [];
+          
+          events.push('Creating MCP client connection');
+          
           // Create a new MCP client for each request to ensure clean state
           // and proper connection lifecycle management
           const transport = new StreamableHTTPClientTransport(new URL(MCP_ENDPOINT));
@@ -53,29 +58,37 @@ const server = createServer(async (req, res) => {
             }
           );
           
+          events.push(`Connecting to MCP endpoint: ${MCP_ENDPOINT}`);
           await client.connect(transport);
+          events.push('Successfully connected to MCP server');
           
           // Validate tool availability
+          events.push('Listing available tools');
           const tools = await client.listTools();
+          events.push(`Found ${tools.tools.length} available tool(s)`);
           const toolAvailable = tools.tools.some((tool: any) => tool.name === 'microsoft_docs_search');
           
           if (!toolAvailable) {
             await client.close();
             res.writeHead(503, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Search tool not available' }));
+            res.end(JSON.stringify({ error: 'Search tool not available', events }));
             return;
           }
           
+          events.push('Calling microsoft_docs_search tool');
           // Call the search tool
           const result = await client.callTool({
             name: 'microsoft_docs_search',
             arguments: { query },
           });
           
+          events.push('Search completed successfully');
+          events.push('Closing MCP connection');
           await client.close();
+          events.push('Connection closed');
           
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(result));
+          res.end(JSON.stringify({ ...result, events }));
         } catch (error) {
           console.error('Error handling search request:', error);
           res.writeHead(500, { 'Content-Type': 'application/json' });

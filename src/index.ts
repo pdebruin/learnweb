@@ -31,7 +31,10 @@ function displayResults(results: any[]) {
   
   addLog(`Found ${results.length} result(s)`, 'success');
   
-  results.forEach((result, index) => {
+  // Limit to 1 result as requested
+  const limitedResults = results.slice(0, 1);
+  
+  limitedResults.forEach((result, index) => {
     const resultItem = document.createElement('div');
     resultItem.className = 'result-item';
     
@@ -129,6 +132,13 @@ async function searchDocs(query: string): Promise<void> {
     
     addLog('Received response from server', 'success');
     const result = await response.json();
+    
+    // Display server-side events if provided
+    if (result.events && Array.isArray(result.events)) {
+      result.events.forEach((event: string) => {
+        addLog(event, 'info');
+      });
+    }
     
     if (result.content && Array.isArray(result.content)) {
       const structuredData = findJsonContent(result.content);
