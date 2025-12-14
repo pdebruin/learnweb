@@ -125,6 +125,14 @@ async function searchDocs(query: string): Promise<void> {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
+      
+      // Display server-side events even for errors
+      if (errorData.events && Array.isArray(errorData.events)) {
+        errorData.events.forEach((event: string) => {
+          addLog(event, 'info');
+        });
+      }
+      
       addLog(`Error: ${errorData.error || `HTTP ${response.status}`}`, 'error');
       displayResults([]);
       return;
