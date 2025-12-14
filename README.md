@@ -2,6 +2,12 @@
 
 A web application that integrates with Microsoft Learn documentation via MCP (Model Context Protocol).
 
+## Live Demo
+
+A static demo of the UI is available at: https://pdebruin.github.io/learnweb/
+
+**Note:** The GitHub Pages deployment shows the user interface but search functionality is not available as it requires a backend server to proxy MCP requests. To use the full functionality, please run the application from source as described below.
+
 ## Running from Source
 
 ### Prerequisites
@@ -195,3 +201,21 @@ This web application replicates the functionality of [learncli](https://github.c
 - MCP SDK for connecting to Microsoft Learn's MCP server
 - A simple HTTP server to serve the application
 - Client-side rendering for a responsive user experience
+
+## Deployment
+
+### GitHub Pages
+
+The project includes a GitHub Actions workflow that automatically builds and deploys the application to GitHub Pages when changes are pushed to the main branch.
+
+**Workflow file**: `.github/workflows/deploy-github-pages.yml`
+
+The workflow:
+1. Triggers on pushes to the main branch (when source files change)
+2. Can also be manually triggered via workflow_dispatch
+3. Builds the application using `npm run build`
+4. Deploys the `dist/` directory to GitHub Pages
+
+**Important**: The GitHub Pages deployment is a static site and cannot run the Node.js backend server. This means the search functionality will not work in the GitHub Pages deployment. The deployment serves as a UI preview only.
+
+To enable search functionality, the application must be run with the Node.js server as described in the "Running from Source" section.
