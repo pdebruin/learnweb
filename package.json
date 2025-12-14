@@ -44,6 +44,7 @@
     "dist"
   ],
   "devDependencies": {
+    "@cfworker/json-schema": "^4.1.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.0.1",
     "esbuild": "^0.27.1",
