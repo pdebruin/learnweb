@@ -127,7 +127,12 @@ async function searchDocs(query: string): Promise<void> {
     });
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
+      let errorData: any = { error: `HTTP ${response.status}` };
+      try {
+        errorData = await response.json();
+      } catch (parseError) {
+        addLog('Failed to parse error response from server', 'error');
+      }
       
       // Display server-side events even for errors
       if (errorData.events && Array.isArray(errorData.events)) {

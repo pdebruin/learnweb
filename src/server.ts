@@ -99,9 +99,20 @@ const server = createServer(async (req, res) => {
           res.end(JSON.stringify({ ...result, events }));
         } catch (error) {
           console.error('Error handling search request:', error);
+          
+          // Extract detailed error information including cause
+          let errorMessage = 'Internal server error';
+          if (error instanceof Error) {
+            errorMessage = error.message;
+            // Check for cause chain to provide more diagnostic info
+            if ('cause' in error && error.cause instanceof Error) {
+              errorMessage += ` (${error.cause.message})`;
+            }
+          }
+          
           res.writeHead(500, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ 
-            error: error instanceof Error ? error.message : 'Internal server error',
+            error: errorMessage,
             events
           }));
         }
