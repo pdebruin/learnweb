@@ -40,6 +40,8 @@ const server = createServer(async (req, res) => {
             return;
           }
           
+          // Create a new MCP client for each request to ensure clean state
+          // and proper connection lifecycle management
           const transport = new StreamableHTTPClientTransport(new URL(MCP_ENDPOINT));
           const client = new Client(
             {
