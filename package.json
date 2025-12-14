@@ -23,7 +23,10 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && cp src/index.html dist/index.html",
+    "build:client": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.js --sourcemap",
+    "build:server": "tsc src/server.ts --outDir dist --declaration --sourceMap --module ES2020 --target ES2020 --moduleResolution node --esModuleInterop",
+    "build:copy": "cp src/index.html dist/index.html",
+    "build": "npm run build:client && npm run build:server && npm run build:copy",
     "start": "npm run build && node dist/server.js",
     "test": "npm run build && jest",
     "prepublishOnly": "npm run build"
@@ -43,6 +46,7 @@
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^25.0.1",
+    "esbuild": "^0.27.1",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
     "typescript": "^5.9.3"
