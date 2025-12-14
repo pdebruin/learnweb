@@ -31,6 +31,9 @@ const server = createServer(async (req, res) => {
       });
       
       req.on('end', async () => {
+        // Collect server-side events to send to client
+        const events: string[] = [];
+        
         try {
           const { query } = JSON.parse(body);
           
@@ -39,9 +42,6 @@ const server = createServer(async (req, res) => {
             res.end(JSON.stringify({ error: 'Invalid query parameter' }));
             return;
           }
-          
-          // Collect server-side events to send to client
-          const events: string[] = [];
           
           events.push('Creating MCP client connection');
           
@@ -93,7 +93,8 @@ const server = createServer(async (req, res) => {
           console.error('Error handling search request:', error);
           res.writeHead(500, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ 
-            error: error instanceof Error ? error.message : 'Internal server error' 
+            error: error instanceof Error ? error.message : 'Internal server error',
+            events
           }));
         }
       });
