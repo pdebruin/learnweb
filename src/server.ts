@@ -4,12 +4,60 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const PORT = process.env.PORT || 3000;
 const MCP_ENDPOINT = "https://learn.microsoft.com/api/mcp";
+
+// Client configuration for MCP connections
+const CLIENT_CONFIG = {
+  name: "learnweb",
+  version: "1.0.0",
+};
+
+const CLIENT_CAPABILITIES = {
+  capabilities: {},
+};
+
+type MCPConnection = {
+  client: Client;
+  transport: StreamableHTTPClientTransport | SSEClientTransport;
+};
+
+/**
+ * Connect to an MCP server with backwards compatibility.
+ * Tries Streamable HTTP transport first, then falls back to SSE transport if that fails.
+ */
+async function connectWithBackwardsCompatibility(url: URL, events: string[]): Promise<MCPConnection> {
+  const client = new Client(CLIENT_CONFIG, CLIENT_CAPABILITIES);
+
+  // Try Streamable HTTP transport first (modern protocol)
+  try {
+    events.push('Attempting connection with Streamable HTTP transport');
+    const streamableTransport = new StreamableHTTPClientTransport(url);
+    await client.connect(streamableTransport);
+    events.push('Successfully connected using Streamable HTTP transport');
+    return { client, transport: streamableTransport };
+  } catch (error) {
+    // If Streamable HTTP fails, fall back to SSE transport (older protocol)
+    events.push(`Streamable HTTP transport failed: ${error instanceof Error ? error.message : String(error)}`);
+    events.push('Falling back to SSE transport');
+    
+    try {
+      const sseTransport = new SSEClientTransport(url);
+      const sseClient = new Client(CLIENT_CONFIG, CLIENT_CAPABILITIES);
+      await sseClient.connect(sseTransport);
+      events.push('Successfully connected using SSE transport');
+      return { client: sseClient, transport: sseTransport };
+    } catch (sseError) {
+      events.push(`SSE transport also failed: ${sseError instanceof Error ? sseError.message : String(sseError)}`);
+      throw new Error('Could not connect to MCP server with any available transport');
+    }
+  }
+}
 
 const server = createServer(async (req, res) => {
   try {
@@ -53,22 +101,9 @@ const server = createServer(async (req, res) => {
           
           events.push('Creating MCP client connection');
           
-          // Create a new MCP client for each request to ensure clean state
-          // and proper connection lifecycle management
-          const transport = new StreamableHTTPClientTransport(new URL(MCP_ENDPOINT));
-          const client = new Client(
-            {
-              name: "learnweb",
-              version: "1.0.0",
-            },
-            {
-              capabilities: {},
-            }
-          );
-          
+          // Connect to MCP server with automatic transport detection and fallback
           events.push(`Connecting to MCP endpoint: ${MCP_ENDPOINT}`);
-          await client.connect(transport);
-          events.push('Successfully connected to MCP server');
+          const { client, transport } = await connectWithBackwardsCompatibility(new URL(MCP_ENDPOINT), events);
           
           // Validate tool availability
           events.push('Listing available tools');
