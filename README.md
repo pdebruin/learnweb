@@ -202,6 +202,16 @@ This web application replicates the functionality of [learncli](https://github.c
 - A simple HTTP server to serve the application
 - Client-side rendering for a responsive user experience
 
+### MCP Transport Compatibility
+
+The application implements backwards compatibility with MCP servers by supporting both modern and legacy transport protocols:
+
+1. **Streamable HTTP Transport** (modern protocol): The application first attempts to connect using the newer Streamable HTTP transport, which is the recommended protocol for MCP connections.
+
+2. **SSE Transport** (legacy protocol): If the Streamable HTTP transport fails (e.g., with HTTP 405 Method Not Allowed), the application automatically falls back to the older Server-Sent Events (SSE) transport protocol.
+
+This fallback mechanism ensures compatibility with the Microsoft Learn MCP server, which currently only supports the SSE transport protocol. The connection process is logged in the execution logs visible in the web interface, allowing you to see which transport protocol was successfully used.
+
 ## Deployment
 
 ### GitHub Pages
