@@ -12,20 +12,27 @@ const __dirname = dirname(__filename);
 const PORT = process.env.PORT || 3000;
 const MCP_ENDPOINT = "https://learn.microsoft.com/api/mcp";
 
+// Client configuration for MCP connections
+const CLIENT_CONFIG = {
+  name: "learnweb",
+  version: "1.0.0",
+};
+
+const CLIENT_CAPABILITIES = {
+  capabilities: {},
+};
+
+type MCPConnection = {
+  client: Client;
+  transport: StreamableHTTPClientTransport | SSEClientTransport;
+};
+
 /**
  * Connect to an MCP server with backwards compatibility.
  * Tries Streamable HTTP transport first, then falls back to SSE transport if that fails.
  */
-async function connectWithBackwardsCompatibility(url: URL, events: string[]): Promise<{ client: Client; transport: StreamableHTTPClientTransport | SSEClientTransport }> {
-  const client = new Client(
-    {
-      name: "learnweb",
-      version: "1.0.0",
-    },
-    {
-      capabilities: {},
-    }
-  );
+async function connectWithBackwardsCompatibility(url: URL, events: string[]): Promise<MCPConnection> {
+  const client = new Client(CLIENT_CONFIG, CLIENT_CAPABILITIES);
 
   // Try Streamable HTTP transport first (modern protocol)
   try {
@@ -41,15 +48,7 @@ async function connectWithBackwardsCompatibility(url: URL, events: string[]): Pr
     
     try {
       const sseTransport = new SSEClientTransport(url);
-      const sseClient = new Client(
-        {
-          name: "learnweb",
-          version: "1.0.0",
-        },
-        {
-          capabilities: {},
-        }
-      );
+      const sseClient = new Client(CLIENT_CONFIG, CLIENT_CAPABILITIES);
       await sseClient.connect(sseTransport);
       events.push('Successfully connected using SSE transport');
       return { client: sseClient, transport: sseTransport };
