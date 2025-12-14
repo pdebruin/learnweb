@@ -31,14 +31,27 @@ const server = createServer(async (req, res) => {
       });
       
       req.on('end', async () => {
+        // Collect server-side events to send to client
+        const events: string[] = [];
+        
         try {
-          const { query } = JSON.parse(body);
+          let query: string;
+          try {
+            const parsed = JSON.parse(body);
+            query = parsed.query;
+          } catch (parseError) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Invalid JSON in request body', events }));
+            return;
+          }
           
           if (!query || typeof query !== 'string') {
             res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Invalid query parameter' }));
+            res.end(JSON.stringify({ error: 'Invalid query parameter', events }));
             return;
           }
+          
+          events.push('Creating MCP client connection');
           
           // Create a new MCP client for each request to ensure clean state
           // and proper connection lifecycle management
@@ -53,34 +66,43 @@ const server = createServer(async (req, res) => {
             }
           );
           
+          events.push(`Connecting to MCP endpoint: ${MCP_ENDPOINT}`);
           await client.connect(transport);
+          events.push('Successfully connected to MCP server');
           
           // Validate tool availability
+          events.push('Listing available tools');
           const tools = await client.listTools();
+          events.push(`Found ${tools.tools.length} available tool(s)`);
           const toolAvailable = tools.tools.some((tool: any) => tool.name === 'microsoft_docs_search');
           
           if (!toolAvailable) {
             await client.close();
             res.writeHead(503, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Search tool not available' }));
+            res.end(JSON.stringify({ error: 'Search tool not available', events }));
             return;
           }
           
+          events.push('Calling microsoft_docs_search tool');
           // Call the search tool
           const result = await client.callTool({
             name: 'microsoft_docs_search',
             arguments: { query },
           });
           
+          events.push('Search completed successfully');
+          events.push('Closing MCP connection');
           await client.close();
+          events.push('Connection closed');
           
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(result));
+          res.end(JSON.stringify({ ...result, events }));
         } catch (error) {
           console.error('Error handling search request:', error);
           res.writeHead(500, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ 
-            error: error instanceof Error ? error.message : 'Internal server error' 
+            error: error instanceof Error ? error.message : 'Internal server error',
+            events
           }));
         }
       });

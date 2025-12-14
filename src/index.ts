@@ -29,9 +29,15 @@ function displayResults(results: any[]) {
     return;
   }
   
-  addLog(`Found ${results.length} result(s)`, 'success');
+  const displayMessage = results.length > 1 
+    ? `Found ${results.length} result(s), displaying top result` 
+    : `Found ${results.length} result(s)`;
+  addLog(displayMessage, 'success');
   
-  results.forEach((result, index) => {
+  // Limit to 1 result as requested
+  const limitedResults = results.slice(0, 1);
+  
+  limitedResults.forEach((result, index) => {
     const resultItem = document.createElement('div');
     resultItem.className = 'result-item';
     
@@ -122,6 +128,14 @@ async function searchDocs(query: string): Promise<void> {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
+      
+      // Display server-side events even for errors
+      if (errorData.events && Array.isArray(errorData.events)) {
+        errorData.events.forEach((event: string) => {
+          addLog(event, 'info');
+        });
+      }
+      
       addLog(`Error: ${errorData.error || `HTTP ${response.status}`}`, 'error');
       displayResults([]);
       return;
@@ -129,6 +143,13 @@ async function searchDocs(query: string): Promise<void> {
     
     addLog('Received response from server', 'success');
     const result = await response.json();
+    
+    // Display server-side events if provided
+    if (result.events && Array.isArray(result.events)) {
+      result.events.forEach((event: string) => {
+        addLog(event, 'info');
+      });
+    }
     
     if (result.content && Array.isArray(result.content)) {
       const structuredData = findJsonContent(result.content);
