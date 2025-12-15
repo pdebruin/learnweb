@@ -26,10 +26,18 @@ type MCPConnection = {
 async function connectWithBackwardsCompatibility(url: URL, addLogFn: (msg: string, type?: 'info' | 'error' | 'success') => void): Promise<MCPConnection> {
   const client = new Client(CLIENT_CONFIG, CLIENT_CAPABILITIES);
 
+  // Configure CORS for cross-origin requests (required for Firefox compatibility)
+  const corsRequestInit: RequestInit = {
+    mode: 'cors',
+    credentials: 'omit'
+  };
+
   // Try Streamable HTTP transport first (modern protocol)
   try {
     addLogFn('Attempting connection with Streamable HTTP transport');
-    const streamableTransport = new StreamableHTTPClientTransport(url);
+    const streamableTransport = new StreamableHTTPClientTransport(url, {
+      requestInit: corsRequestInit
+    });
     await client.connect(streamableTransport);
     addLogFn('Successfully connected using Streamable HTTP transport');
     return { client, transport: streamableTransport };
@@ -39,7 +47,9 @@ async function connectWithBackwardsCompatibility(url: URL, addLogFn: (msg: strin
     addLogFn('Falling back to SSE transport');
     
     try {
-      const sseTransport = new SSEClientTransport(url);
+      const sseTransport = new SSEClientTransport(url, {
+        requestInit: corsRequestInit
+      });
       const sseClient = new Client(CLIENT_CONFIG, CLIENT_CAPABILITIES);
       await sseClient.connect(sseTransport);
       addLogFn('Successfully connected using SSE transport');
