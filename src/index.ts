@@ -46,10 +46,7 @@ async function connectWithBackwardsCompatibility(url: URL, addLogFn: (msg: strin
     // Merge settings, ensuring our CORS settings take precedence
     const mergedInit: RequestInit = {
       ...init,
-      ...corsRequestInit,
-      headers: {
-        ...(init?.headers as Record<string, string> || {}),
-      }
+      ...corsRequestInit
     };
     return fetch(url, mergedInit);
   };
