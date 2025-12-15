@@ -141,7 +141,19 @@ async function searchDocs(query: string): Promise<void> {
         });
       }
       
-      addLog(`Error: ${errorData.error || `HTTP ${response.status}`}`, 'error');
+      // Special handling for 404 and 405 errors - likely static deployment
+      if (response.status === 404 || response.status === 405) {
+        addLog('Backend server not available - this appears to be a static deployment', 'error');
+        addLog('Search functionality requires a running backend server', 'error');
+        addLog('To use search, please run the application locally:', 'info');
+        addLog('1. Clone the repository: git clone https://github.com/pdebruin/learnweb.git', 'info');
+        addLog('2. Install dependencies: npm install', 'info');
+        addLog('3. Start the server: npm start', 'info');
+        addLog('4. Open http://localhost:3000 in your browser', 'info');
+      } else {
+        addLog(`Error: ${errorData.error || `HTTP ${response.status}`}`, 'error');
+      }
+      
       displayResults([]);
       return;
     }
