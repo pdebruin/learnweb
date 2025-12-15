@@ -235,6 +235,4 @@ The workflow:
 
 **Important**: The GitHub Pages deployment is fully functional as a static site. The MCP client runs directly in your browser, connecting to the Microsoft Learn API. This eliminates the need for a backend server.
 
-To enable search functionality, the application must be run with the Node.js server as described in the "Running from Source" section.
-
 **CORS Considerations**: The static web app connects directly to the Microsoft Learn MCP API from the browser. If the API does not allow cross-origin requests from the GitHub Pages domain, you may encounter CORS errors. In that case, running the application locally may provide better results, or the API's CORS policy would need to be configured to allow requests from the deployment domain.
