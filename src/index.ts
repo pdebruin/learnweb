@@ -22,6 +22,12 @@ type MCPConnection = {
 /**
  * Connect to an MCP server with backwards compatibility.
  * Tries Streamable HTTP transport first, then falls back to SSE transport if that fails.
+ * 
+ * Firefox Compatibility:
+ * - Firefox is stricter than Chrome about CORS with EventSource/SSE connections
+ * - The native EventSource API doesn't support controlling credentials/CORS
+ * - We provide a custom fetch function with explicit CORS settings and withCredentials=false
+ * - This prevents "CORS request did not succeed" errors in Firefox
  */
 async function connectWithBackwardsCompatibility(url: URL, addLogFn: (msg: string, type?: 'info' | 'error' | 'success') => void): Promise<MCPConnection> {
   const client = new Client(CLIENT_CONFIG, CLIENT_CAPABILITIES);
@@ -30,6 +36,26 @@ async function connectWithBackwardsCompatibility(url: URL, addLogFn: (msg: strin
   const corsRequestInit: RequestInit = {
     mode: 'cors',
     credentials: 'omit'
+  };
+
+  // Configure EventSource with a custom fetch that properly handles CORS
+  // Firefox requires explicit CORS mode and credentials control for SSE/EventSource.
+  // The native EventSource API sends credentials by default, which causes CORS failures.
+  // By providing a custom fetch, we can set mode='cors' and credentials='omit'.
+  const customFetch: typeof fetch = async (url, init) => {
+    // Merge settings, ensuring our CORS settings take precedence
+    const mergedInit: RequestInit = {
+      ...init,
+      ...corsRequestInit
+    };
+    return fetch(url, mergedInit);
+  };
+
+  const eventSourceInit = {
+    // Disable credentials to prevent CORS issues in Firefox
+    withCredentials: false,
+    // Use our custom fetch that applies CORS settings
+    fetch: customFetch
   };
 
   // Try Streamable HTTP transport first (modern protocol)
@@ -48,7 +74,8 @@ async function connectWithBackwardsCompatibility(url: URL, addLogFn: (msg: strin
     
     try {
       const sseTransport = new SSEClientTransport(url, {
-        requestInit: corsRequestInit
+        requestInit: corsRequestInit,
+        eventSourceInit: eventSourceInit
       });
       const sseClient = new Client(CLIENT_CONFIG, CLIENT_CAPABILITIES);
       await sseClient.connect(sseTransport);
