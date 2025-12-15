@@ -1,4 +1,55 @@
-const API_ENDPOINT = "/api/search";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+
+const MCP_ENDPOINT = "https://learn.microsoft.com/api/mcp";
+
+// Client configuration for MCP connections
+const CLIENT_CONFIG = {
+  name: "learnweb",
+  version: "1.0.0",
+};
+
+const CLIENT_CAPABILITIES = {
+  capabilities: {},
+};
+
+type MCPConnection = {
+  client: Client;
+  transport: StreamableHTTPClientTransport | SSEClientTransport;
+};
+
+/**
+ * Connect to an MCP server with backwards compatibility.
+ * Tries Streamable HTTP transport first, then falls back to SSE transport if that fails.
+ */
+async function connectWithBackwardsCompatibility(url: URL, addLogFn: (msg: string, type?: 'info' | 'error' | 'success') => void): Promise<MCPConnection> {
+  const client = new Client(CLIENT_CONFIG, CLIENT_CAPABILITIES);
+
+  // Try Streamable HTTP transport first (modern protocol)
+  try {
+    addLogFn('Attempting connection with Streamable HTTP transport');
+    const streamableTransport = new StreamableHTTPClientTransport(url);
+    await client.connect(streamableTransport);
+    addLogFn('Successfully connected using Streamable HTTP transport');
+    return { client, transport: streamableTransport };
+  } catch (error) {
+    // If Streamable HTTP fails, fall back to SSE transport (older protocol)
+    addLogFn(`Streamable HTTP transport failed: ${error instanceof Error ? error.message : String(error)}`);
+    addLogFn('Falling back to SSE transport');
+    
+    try {
+      const sseTransport = new SSEClientTransport(url);
+      const sseClient = new Client(CLIENT_CONFIG, CLIENT_CAPABILITIES);
+      await sseClient.connect(sseTransport);
+      addLogFn('Successfully connected using SSE transport');
+      return { client: sseClient, transport: sseTransport };
+    } catch (sseError) {
+      addLogFn(`SSE transport also failed: ${sseError instanceof Error ? sseError.message : String(sseError)}`);
+      throw new Error('Could not connect to MCP server with any available transport');
+    }
+  }
+}
 
 function addLog(message: string, type: 'info' | 'error' | 'success' = 'info') {
   const logsContainer = document.getElementById('logs');
@@ -116,45 +167,36 @@ async function searchDocs(query: string): Promise<void> {
   if (searchInput) searchInput.disabled = true;
   
   try {
-    addLog('Sending search request to server...', 'info');
+    addLog('Creating MCP client connection', 'info');
     
-    const response = await fetch(API_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query }),
-    });
+    // Connect to MCP server with automatic transport detection and fallback
+    addLog(`Connecting to MCP endpoint: ${MCP_ENDPOINT}`, 'info');
+    const { client, transport } = await connectWithBackwardsCompatibility(new URL(MCP_ENDPOINT), addLog);
     
-    if (!response.ok) {
-      let errorData: any = { error: `HTTP ${response.status}` };
-      try {
-        errorData = await response.json();
-      } catch (parseError) {
-        addLog('Failed to parse error response from server', 'error');
-      }
-      
-      // Display server-side events even for errors
-      if (errorData.events && Array.isArray(errorData.events)) {
-        errorData.events.forEach((event: string) => {
-          addLog(event, 'info');
-        });
-      }
-      
-      addLog(`Error: ${errorData.error || `HTTP ${response.status}`}`, 'error');
+    // Validate tool availability
+    addLog('Listing available tools', 'info');
+    const tools = await client.listTools();
+    addLog(`Found ${tools.tools.length} available tool(s)`, 'info');
+    const toolAvailable = tools.tools.some((tool: any) => tool.name === 'microsoft_docs_search');
+    
+    if (!toolAvailable) {
+      await client.close();
+      addLog('Search tool not available', 'error');
       displayResults([]);
       return;
     }
     
-    addLog('Received response from server', 'success');
-    const result = await response.json();
+    addLog('Calling microsoft_docs_search tool', 'info');
+    // Call the search tool
+    const result = await client.callTool({
+      name: 'microsoft_docs_search',
+      arguments: { query },
+    });
     
-    // Display server-side events if provided
-    if (result.events && Array.isArray(result.events)) {
-      result.events.forEach((event: string) => {
-        addLog(event, 'info');
-      });
-    }
+    addLog('Search completed successfully', 'success');
+    addLog('Closing MCP connection', 'info');
+    await client.close();
+    addLog('Connection closed', 'info');
     
     if (result.content && Array.isArray(result.content)) {
       const structuredData = findJsonContent(result.content);
