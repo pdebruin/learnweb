@@ -43,11 +43,13 @@ async function connectWithBackwardsCompatibility(url: URL, addLogFn: (msg: strin
   // The native EventSource API sends credentials by default, which causes CORS failures.
   // By providing a custom fetch, we can set mode='cors' and credentials='omit'.
   const customFetch: typeof fetch = async (url, init) => {
-    // Merge our CORS settings with any existing init
-    const mergedInit = {
-      ...corsRequestInit,
+    // Merge settings, ensuring our CORS settings take precedence
+    const mergedInit: RequestInit = {
       ...init,
-      headers: init?.headers || {}
+      ...corsRequestInit,
+      headers: {
+        ...(init?.headers as Record<string, string> || {}),
+      }
     };
     return fetch(url, mergedInit);
   };
