@@ -24,10 +24,9 @@
   "main": "dist/index.js",
   "scripts": {
     "build:client": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.js --sourcemap",
-    "build:server": "tsc src/server.ts --outDir dist --declaration --sourceMap --module ES2020 --target ES2020 --moduleResolution node --esModuleInterop",
     "build:copy": "cp src/index.html dist/index.html",
-    "build": "npm run build:client && npm run build:server && npm run build:copy",
-    "start": "npm run build && node dist/server.js",
+    "build": "npm run build:client && npm run build:copy",
+    "start": "npm run build && npx http-server dist -p 3000 -o",
     "test": "npm run build && jest",
     "prepublishOnly": "npm run build"
   },

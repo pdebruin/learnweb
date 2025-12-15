@@ -4,9 +4,11 @@ A web application that integrates with Microsoft Learn documentation via MCP (Mo
 
 ## Live Demo
 
-A static demo of the UI is available at: https://pdebruin.github.io/learnweb/
+Try the app at: https://pdebruin.github.io/learnweb/
 
-**Note:** The GitHub Pages deployment shows the user interface but search functionality is not available as it requires a backend server to proxy MCP requests. To use the full functionality, please run the application from source as described below.
+The GitHub Pages deployment is a fully static web app that runs entirely in your browser. Search functionality works by connecting directly to the Microsoft Learn MCP server from your browser.
+
+**Note:** If you encounter CORS (Cross-Origin Resource Sharing) errors, the Microsoft Learn API may have restrictions. In that case, you can run the application locally as described below.
 
 ## Running from Source
 
@@ -44,7 +46,7 @@ This command compiles TypeScript files to JavaScript and copies static assets to
 **Expected output:**
 ```
 > @pjmdebruin/learnweb@1.0.0 build
-> tsc && cp src/index.html dist/index.html
+> npm run build:client && npm run build:copy
 ```
 
 4. **Verify the build:**
@@ -52,22 +54,26 @@ This command compiles TypeScript files to JavaScript and copies static assets to
 Check that the `dist/` directory was created with the following files:
 ```bash
 ls dist/
-# Should show: index.html  index.js  index.js.map  server.js  server.js.map
+# Should show: index.html  index.js  index.js.map
 ```
 
 ### Usage
 
-#### Starting the Server
+#### Starting the Local Server
 
-Run the web server:
+For local development and testing:
 ```bash
 npm start
 ```
 
 **Expected output:**
 ```
-Server running at http://localhost:3000/
+Starting up http-server, serving dist
+Available on:
+  http://localhost:3000
 ```
+
+The application will automatically open in your default browser.
 
 #### Accessing the Application
 
@@ -119,8 +125,7 @@ To stop the server, press `Ctrl+C` in the terminal where it's running.
 learnweb/
 ├── src/
 │   ├── index.html      # Web interface HTML
-│   ├── index.ts        # Client-side TypeScript code
-│   ├── server.ts       # HTTP server implementation
+│   ├── index.ts        # Client-side TypeScript code (includes MCP client)
 │   └── index.test.ts   # Test suite
 ├── dist/               # Compiled output (created by build)
 ├── package.json        # Project configuration and dependencies
@@ -153,7 +158,7 @@ If `npm run build` fails:
 
 #### Server Won't Start
 
-If `npm start` fails or the server doesn't respond:
+If `npm start` fails or the local server doesn't respond:
 
 1. **Check if port 3000 is already in use:**
    ```bash
@@ -164,15 +169,16 @@ If `npm start` fails or the server doesn't respond:
    netstat -ano | findstr :3000
    ```
 
-2. **Use a different port:**
+2. **Try manually starting the server:**
    ```bash
-   PORT=8080 npm start
+   npm run build
+   npx http-server dist -p 3000
    ```
 
 3. **Verify the build completed successfully:**
    ```bash
    ls dist/
-   # Should show compiled files
+   # Should show: index.html, index.js, index.js.map
    ```
 
 #### Tests Fail
@@ -191,16 +197,17 @@ If `npm test` fails:
 
 - **"Cannot find module" errors**: Run `npm install` to ensure all dependencies are installed
 - **TypeScript compilation errors**: Check that your TypeScript version is 5.9.3 or higher (`npm list typescript`)
-- **Port already in use**: Stop other services using port 3000 or use the `PORT` environment variable to use a different port
+- **Port already in use**: Stop other services using port 3000 or manually specify a different port with `npx http-server dist -p <port>`
+- **CORS errors in browser**: This may occur if the Microsoft Learn API has CORS restrictions. The app works best when the API allows cross-origin requests. If you encounter persistent CORS issues, the API's CORS policy may need to be updated.
 
 ## Architecture
 
-This web application replicates the functionality of [learncli](https://github.com/pdebruin/learncli) but provides a web-based interface instead of a command-line interface. It uses:
+This web application replicates the functionality of [learncli](https://github.com/pdebruin/learncli) but provides a web-based interface instead of a command-line interface. It is a fully static web application that runs entirely in the browser, using:
 
 - TypeScript for type safety
-- MCP SDK for connecting to Microsoft Learn's MCP server
-- A simple HTTP server to serve the application
+- MCP SDK for connecting to Microsoft Learn's MCP server directly from the browser
 - Client-side rendering for a responsive user experience
+- esbuild for bundling the application into a single JavaScript file
 
 ### MCP Transport Compatibility
 
@@ -226,6 +233,6 @@ The workflow:
 3. Builds the application using `npm run build`
 4. Deploys the `dist/` directory to GitHub Pages
 
-**Important**: The GitHub Pages deployment is a static site and cannot run the Node.js backend server. This means the search functionality will not work in the GitHub Pages deployment. The deployment serves as a UI preview only.
+**Important**: The GitHub Pages deployment is fully functional as a static site. The MCP client runs directly in your browser, connecting to the Microsoft Learn API. This eliminates the need for a backend server.
 
-To enable search functionality, the application must be run with the Node.js server as described in the "Running from Source" section.
+**CORS Considerations**: The static web app connects directly to the Microsoft Learn MCP API from the browser. If the API does not allow cross-origin requests from the GitHub Pages domain, you may encounter CORS errors. In that case, running the application locally may provide better results, or the API's CORS policy would need to be configured to allow requests from the deployment domain.
