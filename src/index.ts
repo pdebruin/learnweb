@@ -32,6 +32,23 @@ async function connectWithBackwardsCompatibility(url: URL, addLogFn: (msg: strin
     credentials: 'omit'
   };
 
+  // Configure EventSource with a custom fetch that properly handles CORS
+  // This is critical for Firefox compatibility which is strict about CORS
+  const customFetch: typeof fetch = async (url, init) => {
+    // Merge our CORS settings with any existing init
+    const mergedInit = {
+      ...corsRequestInit,
+      ...init,
+      headers: init?.headers || {}
+    };
+    return fetch(url, mergedInit);
+  };
+
+  const eventSourceInit = {
+    withCredentials: false,
+    fetch: customFetch
+  };
+
   // Try Streamable HTTP transport first (modern protocol)
   try {
     addLogFn('Attempting connection with Streamable HTTP transport');
@@ -48,7 +65,8 @@ async function connectWithBackwardsCompatibility(url: URL, addLogFn: (msg: strin
     
     try {
       const sseTransport = new SSEClientTransport(url, {
-        requestInit: corsRequestInit
+        requestInit: corsRequestInit,
+        eventSourceInit: eventSourceInit
       });
       const sseClient = new Client(CLIENT_CONFIG, CLIENT_CAPABILITIES);
       await sseClient.connect(sseTransport);
