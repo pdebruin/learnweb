@@ -129,11 +129,38 @@ function displayResults(results: any[]) {
     const resultItem = document.createElement('div');
     resultItem.className = 'result-item';
     
+    const linkField = result.links || result.link;
+    let validUrl: string | null = null;
+    
+    // Validate URL to prevent XSS
+    if (linkField) {
+      const linkText = typeof linkField === 'string' ? linkField : JSON.stringify(linkField);
+      try {
+        const url = new URL(linkText);
+        if (url.protocol === 'http:' || url.protocol === 'https:') {
+          validUrl = linkText;
+        }
+      } catch (e) {
+        // Invalid URL, skip link
+      }
+    }
+    
     if (result.title) {
-      const title = document.createElement('div');
-      title.className = 'result-title';
-      title.textContent = result.title;
-      resultItem.appendChild(title);
+      if (validUrl) {
+        // Make title clickable
+        const titleLink = document.createElement('a');
+        titleLink.className = 'result-title';
+        titleLink.href = validUrl;
+        titleLink.textContent = result.title;
+        titleLink.target = '_blank';
+        resultItem.appendChild(titleLink);
+      } else {
+        // No valid URL, render title as plain text
+        const title = document.createElement('div');
+        title.className = 'result-title';
+        title.textContent = result.title;
+        resultItem.appendChild(title);
+      }
     }
     
     if (result.content) {
@@ -143,23 +170,13 @@ function displayResults(results: any[]) {
       resultItem.appendChild(content);
     }
     
-    const linkField = result.links || result.link;
-    if (linkField) {
-      const linkText = typeof linkField === 'string' ? linkField : JSON.stringify(linkField);
-      // Validate URL to prevent XSS
-      try {
-        const url = new URL(linkText);
-        if (url.protocol === 'http:' || url.protocol === 'https:') {
-          const link = document.createElement('a');
-          link.className = 'result-link';
-          link.href = linkText;
-          link.textContent = 'View documentation →';
-          link.target = '_blank';
-          resultItem.appendChild(link);
-        }
-      } catch (e) {
-        // Invalid URL, skip link
-      }
+    if (validUrl) {
+      const link = document.createElement('a');
+      link.className = 'result-link';
+      link.href = validUrl;
+      link.textContent = 'View documentation →';
+      link.target = '_blank';
+      resultItem.appendChild(link);
     }
     
     resultsContainer.appendChild(resultItem);
