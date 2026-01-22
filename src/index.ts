@@ -171,6 +171,23 @@ function displayResults(results: any[]) {
     }
     
     if (validUrl) {
+      const sourceContainer = document.createElement('div');
+      sourceContainer.className = 'result-source';
+      
+      const sourceLabel = document.createElement('span');
+      sourceLabel.className = 'source-label';
+      sourceLabel.textContent = 'Source: ';
+      
+      const sourceUrl = document.createElement('a');
+      sourceUrl.className = 'source-url';
+      sourceUrl.href = validUrl;
+      sourceUrl.textContent = validUrl;
+      sourceUrl.target = '_blank';
+      
+      sourceContainer.appendChild(sourceLabel);
+      sourceContainer.appendChild(sourceUrl);
+      resultItem.appendChild(sourceContainer);
+      
       const link = document.createElement('a');
       link.className = 'result-link';
       link.href = validUrl;
