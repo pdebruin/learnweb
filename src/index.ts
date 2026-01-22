@@ -153,6 +153,7 @@ function displayResults(results: any[]) {
         titleLink.href = validUrl;
         titleLink.textContent = result.title;
         titleLink.target = '_blank';
+        titleLink.rel = 'noopener noreferrer';
         resultItem.appendChild(titleLink);
       } else {
         // No valid URL, render title as plain text
@@ -183,6 +184,7 @@ function displayResults(results: any[]) {
       sourceUrl.href = validUrl;
       sourceUrl.textContent = validUrl;
       sourceUrl.target = '_blank';
+      sourceUrl.rel = 'noopener noreferrer';
       
       sourceContainer.appendChild(sourceLabel);
       sourceContainer.appendChild(sourceUrl);
@@ -193,6 +195,7 @@ function displayResults(results: any[]) {
       link.href = validUrl;
       link.textContent = 'View documentation →';
       link.target = '_blank';
+      link.rel = 'noopener noreferrer';
       resultItem.appendChild(link);
     }
     
