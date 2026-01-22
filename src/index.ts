@@ -153,6 +153,7 @@ function displayResults(results: any[]) {
         titleLink.href = validUrl;
         titleLink.textContent = result.title;
         titleLink.target = '_blank';
+        titleLink.rel = 'noopener noreferrer';
         resultItem.appendChild(titleLink);
       } else {
         // No valid URL, render title as plain text
@@ -171,11 +172,30 @@ function displayResults(results: any[]) {
     }
     
     if (validUrl) {
+      const sourceContainer = document.createElement('div');
+      sourceContainer.className = 'result-source';
+      
+      const sourceLabel = document.createElement('span');
+      sourceLabel.className = 'source-label';
+      sourceLabel.textContent = 'Source: ';
+      
+      const sourceUrl = document.createElement('a');
+      sourceUrl.className = 'source-url';
+      sourceUrl.href = validUrl;
+      sourceUrl.textContent = validUrl;
+      sourceUrl.target = '_blank';
+      sourceUrl.rel = 'noopener noreferrer';
+      
+      sourceContainer.appendChild(sourceLabel);
+      sourceContainer.appendChild(sourceUrl);
+      resultItem.appendChild(sourceContainer);
+      
       const link = document.createElement('a');
       link.className = 'result-link';
       link.href = validUrl;
       link.textContent = 'View documentation →';
       link.target = '_blank';
+      link.rel = 'noopener noreferrer';
       resultItem.appendChild(link);
     }
     
