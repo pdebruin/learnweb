@@ -24,7 +24,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build:client": "esbuild src/index.ts --bundle --format=esm --outfile=dist/index.js --sourcemap",
-    "build:copy": "cp src/index.html dist/index.html",
+    "build:copy": "cp src/index.html dist/index.html && cp src/diagnostic.html dist/diagnostic.html",
     "build": "npm run build:client && npm run build:copy",
     "start": "npm run build && npx http-server dist -p 3000 -o",
     "test": "npm run build && jest",
